@@ -3,6 +3,7 @@ import pandas as pd
 
 from prefect import task, flow
 
+
 @task
 def create_series(arr):
     return pd.Series(arr, name="values")
@@ -21,6 +22,7 @@ def summarize_data(series):
         "std": series.std(),
         "mode": series.mode()[0]
     }
+
 
 @flow
 def pipeline_flow():
@@ -45,14 +47,9 @@ def pipeline_flow():
 
     return summary
 
+
 if __name__ == "__main__":
-    result = pipeline_flow()
-
-    print("Pipeline summary:")
-
-    for key, value in result.items():
-        print(f"{key}: {value}")
-
+    pipeline_flow()
 
 
 # Why Prefect may be unnecessary here:

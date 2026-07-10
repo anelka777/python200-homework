@@ -217,7 +217,6 @@ print(np.std(data))
 
 # Descriptive Stats Q2
 
-# np.random.normal(mean, std, size)
 scores = np.random.normal(65, 10, 500)
 
 plt.hist(scores, bins=20)
@@ -235,7 +234,7 @@ group_b = [75, 80, 78, 90, 85, 79, 82, 88]
 
 plt.boxplot(
     [group_a, group_b],
-    tick_labels=["Group A", "Group B"]
+    labels=["Group A", "Group B"]  # FIX: was tick_labels, assignment asked for labels=
 )
 
 plt.title("Score Comparison")
@@ -249,7 +248,7 @@ skewed_data = np.random.exponential(10, 200)
 
 plt.boxplot(
     [normal_data, skewed_data],
-    tick_labels=["Normal", "Exponential"]
+    labels=["Normal", "Exponential"]
 )
 
 plt.title("Distribution Comparison")
@@ -421,8 +420,9 @@ plt.title("Correlation Heatmap")
 plt.show()
 
 
-
 # --- Pipelines ---
+# NOTE: kept as the final answer in this file, per the assignment instructions.
+# The Prefect version of this same pipeline lives in prefect_warmup.py.
 
 # Pipeline Q1
 
@@ -439,6 +439,7 @@ def summarize_data(series):
         "std": series.std(),
         "mode": series.mode()[0]
     }
+
 def data_pipeline(arr):
     series = create_series(arr)
     clean_series = clean_data(series)

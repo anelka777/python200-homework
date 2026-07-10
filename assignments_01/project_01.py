@@ -35,6 +35,16 @@ def load_data():
         "year"
     }
 
+    # Column names that map to our standardized "happiness_score" column,
+    # since this varies from year to year in the raw files.
+    happiness_score_aliases = {
+        "Happiness score": "happiness_score",
+        "Ladder score": "happiness_score",
+    }
+    region_aliases = {
+        "Regional indicator": "region",
+    }
+
     # Load data from 2015 to 2024
     for year in range(2015, 2025):
         file_path = DATA_DIR / f"world_happiness_{year}.csv"
@@ -50,12 +60,24 @@ def load_data():
             decimal=","
         )
 
+        matched_score_columns = [
+            col for col in happiness_score_aliases if col in df.columns
+        ]
+
+        if not matched_score_columns:
+            raise ValueError(
+                f"{year}: could not find a happiness score column. "
+                f"Expected one of {list(happiness_score_aliases)}, "
+                f"got columns: {df.columns.tolist()}"
+            )
+
+        logger.info(
+            f"{year}: using '{matched_score_columns[0]}' as the source "
+            f"for happiness_score"
+        )
+
         # Normalize column names
-        df = df.rename(columns={
-            "Happiness score": "happiness_score",
-            "Ladder score": "happiness_score",
-            "Regional indicator": "region"
-        })
+        df = df.rename(columns={**happiness_score_aliases, **region_aliases})
 
         # Add year information
         df["year"] = year
@@ -254,21 +276,23 @@ def hypothesis_testing(df):
     logger.info(f"T-statistic: {t_stat:.4f}")
     logger.info(f"P-value: {p_value:.4f}")
 
-
-
-
     alpha = 0.05
+
+    direction = "higher" if mean_2020 > mean_2019 else "lower"
 
     if p_value < alpha:
         interpretation = (
-            "The average happiness score changed significantly between "
-            "2019 and 2020. This difference is unlikely to be due to random chance."
+            f"The average happiness score in 2020 ({mean_2020:.2f}) was "
+            f"{direction} than in 2019 ({mean_2019:.2f}), and this "
+            "difference is statistically significant and unlikely to be "
+            "due to random chance."
         )
     else:
         interpretation = (
-            "The average happiness score did not change significantly between "
-            "2019 and 2020. The observed difference could reasonably be explained "
-            "by random variation."
+            f"The average happiness score in 2020 ({mean_2020:.2f}) was "
+            f"{direction} than in 2019 ({mean_2019:.2f}), but this "
+            "difference is not statistically significant. The observed "
+            "difference could reasonably be explained by random variation."
         )
 
     logger.info(f"Interpretation: {interpretation}")
@@ -467,25 +491,32 @@ def summary_report(df, hypothesis_result, strongest_correlation):
     if hypothesis_result["significant"]:
         if hypothesis_result["mean_2020"] > hypothesis_result["mean_2019"]:
             logger.info(
-                "Average happiness was higher in 2020 than in 2019, "
-                "and this difference is unlikely to be due to chance."
+                f"Average happiness was higher in 2020 "
+                f"({hypothesis_result['mean_2020']:.2f}) than in 2019 "
+                f"({hypothesis_result['mean_2019']:.2f}), and this "
+                "difference is unlikely to be due to chance."
             )
         else:
             logger.info(
-                "Average happiness was lower in 2020 than in 2019, "
-                "and this difference is unlikely to be due to chance."
+                f"Average happiness was lower in 2020 "
+                f"({hypothesis_result['mean_2020']:.2f}) than in 2019 "
+                f"({hypothesis_result['mean_2019']:.2f}), and this "
+                "difference is unlikely to be due to chance."
             )
     else:
         logger.info(
             "The analysis did not find enough evidence to conclude "
             "that average happiness changed between 2019 and 2020."
-            )
+        )
 
     if strongest_correlation:
         logger.info(
-            f"The strongest correlation after Bonferroni correction "
-            f"is {strongest_correlation['variable']} "
-            f"(correlation={strongest_correlation['correlation']:.4f})."
+            "Of all variables tested against happiness_score, the "
+            f"strongest correlation that remained statistically significant "
+            f"after Bonferroni correction is "
+            f"'{strongest_correlation['variable']}' "
+            f"(correlation={strongest_correlation['correlation']:.4f}, "
+            f"p-value={strongest_correlation['p_value']:.4g})."
         )
     else:
         logger.info(
