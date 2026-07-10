@@ -35,14 +35,15 @@ def load_data():
         "year"
     }
 
-    # Column names that map to our standardized "happiness_score" column,
-    # since this varies from year to year in the raw files.
-    happiness_score_aliases = {
-        "Happiness score": "happiness_score",
-        "Ladder score": "happiness_score",
-    }
-    region_aliases = {
-        "Regional indicator": "region",
+    # Every standardized column now goes through the same detect-and-log
+    # process (previously only happiness_score got this treatment), so we
+    # can't silently end up with an inconsistent schema across years. Each
+    # target column lists every raw name it might appear under across the
+    # 2015-2024 files.
+    column_aliases = {
+        "happiness_score": ["Happiness score", "Ladder score", "happiness_score"],
+        "region": ["Regional indicator", "region"],
+        "Country": ["Country", "Country name", "country"],
     }
 
     # Load data from 2015 to 2024
@@ -60,24 +61,31 @@ def load_data():
             decimal=","
         )
 
-        matched_score_columns = [
-            col for col in happiness_score_aliases if col in df.columns
-        ]
+        rename_map = {}
 
-        if not matched_score_columns:
-            raise ValueError(
-                f"{year}: could not find a happiness score column. "
-                f"Expected one of {list(happiness_score_aliases)}, "
-                f"got columns: {df.columns.tolist()}"
+        for target_col, aliases in column_aliases.items():
+            matched = [col for col in aliases if col in df.columns]
+
+            if not matched:
+                raise ValueError(
+                    f"{year}: could not find a source column for "
+                    f"'{target_col}'. Expected one of {aliases}, "
+                    f"got columns: {df.columns.tolist()}"
+                )
+
+            source_col = matched[0]
+
+            logger.info(
+                f"{year}: using '{source_col}' as the source for "
+                f"'{target_col}'"
             )
 
-        logger.info(
-            f"{year}: using '{matched_score_columns[0]}' as the source "
-            f"for happiness_score"
-        )
+            if source_col != target_col:
+                rename_map[source_col] = target_col
 
-        # Normalize column names
-        df = df.rename(columns={**happiness_score_aliases, **region_aliases})
+        # Normalize column names so every year ends up with the exact same
+        # schema before concatenation.
+        df = df.rename(columns=rename_map)
 
         # Add year information
         df["year"] = year
@@ -278,21 +286,28 @@ def hypothesis_testing(df):
 
     alpha = 0.05
 
+    # The Interpretation now names the exact means, the direction of the
+    # change, and the size of the gap, so the wording maps directly onto
+    # this specific 2019 vs 2020 comparison rather than a generic template.
     direction = "higher" if mean_2020 > mean_2019 else "lower"
+    gap = abs(mean_2020 - mean_2019)
 
     if p_value < alpha:
         interpretation = (
-            f"The average happiness score in 2020 ({mean_2020:.2f}) was "
-            f"{direction} than in 2019 ({mean_2019:.2f}), and this "
-            "difference is statistically significant and unlikely to be "
-            "due to random chance."
+            f"Mean happiness score went from {mean_2019:.2f} in 2019 to "
+            f"{mean_2020:.2f} in 2020 — a {gap:.2f}-point {direction} shift. "
+            f"With p={p_value:.4f} (below alpha={alpha}), this change is "
+            "statistically significant and unlikely to be due to random "
+            "chance."
         )
     else:
         interpretation = (
-            f"The average happiness score in 2020 ({mean_2020:.2f}) was "
-            f"{direction} than in 2019 ({mean_2019:.2f}), but this "
-            "difference is not statistically significant. The observed "
-            "difference could reasonably be explained by random variation."
+            f"Mean happiness score went from {mean_2019:.2f} in 2019 to "
+            f"{mean_2020:.2f} in 2020 — a {gap:.2f}-point {direction} shift. "
+            f"With p={p_value:.4f} (above alpha={alpha}), this change is "
+            "not statistically significant, so it could reasonably be "
+            "explained by random variation rather than a real year-over-year "
+            "effect."
         )
 
     logger.info(f"Interpretation: {interpretation}")
@@ -488,27 +503,31 @@ def summary_report(df, hypothesis_result, strongest_correlation):
     for region, score in bottom_three.items():
         logger.info(f"{region}: {score:.2f}")
 
+    mean_2019 = hypothesis_result["mean_2019"]
+    mean_2020 = hypothesis_result["mean_2020"]
+    direction = "higher" if mean_2020 > mean_2019 else "lower"
+    gap = abs(mean_2020 - mean_2019)
+
     if hypothesis_result["significant"]:
-        if hypothesis_result["mean_2020"] > hypothesis_result["mean_2019"]:
-            logger.info(
-                f"Average happiness was higher in 2020 "
-                f"({hypothesis_result['mean_2020']:.2f}) than in 2019 "
-                f"({hypothesis_result['mean_2019']:.2f}), and this "
-                "difference is unlikely to be due to chance."
-            )
-        else:
-            logger.info(
-                f"Average happiness was lower in 2020 "
-                f"({hypothesis_result['mean_2020']:.2f}) than in 2019 "
-                f"({hypothesis_result['mean_2019']:.2f}), and this "
-                "difference is unlikely to be due to chance."
-            )
+        logger.info(
+            f"Average happiness was {direction} in 2020 ({mean_2020:.2f}) "
+            f"than in 2019 ({mean_2019:.2f}), a {gap:.2f}-point difference "
+            f"that is statistically significant (p={hypothesis_result['p_value']:.4f}) "
+            "and unlikely to be due to chance."
+        )
     else:
         logger.info(
-            "The analysis did not find enough evidence to conclude "
-            "that average happiness changed between 2019 and 2020."
+            f"Average happiness was {direction} in 2020 ({mean_2020:.2f}) "
+            f"than in 2019 ({mean_2019:.2f}), a {gap:.2f}-point difference, "
+            f"but this was not statistically significant "
+            f"(p={hypothesis_result['p_value']:.4f}). The analysis did not "
+            "find enough evidence to conclude that average happiness "
+            "changed between 2019 and 2020."
         )
 
+    # Make it explicit that this is the *strongest* correlation with
+    # happiness_score that survived Bonferroni correction, including its
+    # p-value, rather than just naming the variable.
     if strongest_correlation:
         logger.info(
             "Of all variables tested against happiness_score, the "
