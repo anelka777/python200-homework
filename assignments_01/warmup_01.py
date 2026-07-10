@@ -6,9 +6,6 @@ from scipy.stats import pearsonr
 import seaborn as sns
 
 
-import sys
-print(sys.executable)
-
 # --- Pandas ---
 
 data = {
@@ -174,6 +171,8 @@ plt.scatter(x2, y2, color="red", label="Dataset 2")
 plt.legend()
 plt.xlabel("x")
 plt.ylabel("y")
+
+plt.tight_layout()
 plt.show()
 
 
@@ -192,8 +191,6 @@ ax[0].set_ylabel("y")
 
 ax[1].set_xlabel("Subjects")
 ax[1].set_ylabel("Scores")
-ax[0].set_xlabel("x")
-ax[0].set_ylabel("y")
 
 plt.tight_layout()
 plt.show()

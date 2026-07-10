@@ -54,14 +54,13 @@ if __name__ == "__main__":
         print(f"{key}: {value}")
 
 
-"""
-Why Prefect may be unnecessary here:
-This pipeline is very small and processes only a few values.
-Using Prefect adds extra setup and complexity compared to simply
-running regular Python functions.
 
-When Prefect is useful:
-Prefect is helpful for larger workflows with many steps, large datasets,
-scheduled jobs, monitoring, retries, logging, and managing dependencies
-between tasks.
-"""
+# Why Prefect may be unnecessary here:
+# This pipeline is very small and processes only a few values.
+# Using Prefect adds extra setup and complexity compared to simply
+# running regular Python functions.
+
+# When Prefect is useful:
+# Prefect is helpful for larger workflows with many steps, large datasets,
+# scheduled jobs, monitoring, retries, logging, and managing dependencies
+# between tasks.

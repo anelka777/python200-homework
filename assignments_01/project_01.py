@@ -51,6 +51,10 @@ def load_data():
             "Regional indicator": "region"
         })
 
+        logger.info(
+            f"Loaded {year}: {len(df)} rows"
+        )
+
         # Add year information
         df["year"] = year
 
@@ -253,7 +257,7 @@ def hypothesis_testing(df):
             "The average happiness score did not change significantly between "
             "2019 and 2020. The observed difference could reasonably be explained "
             "by random variation."
-    )
+        )
 
     logger.info(f"Interpretation: {interpretation}")
 
@@ -305,6 +309,8 @@ def hypothesis_testing(df):
         "mean_2020": mean_2020,
         "p_value": p_value,
         "significant": p_value < alpha,
+        "region_p_value": region_p_value,
+        "region_significant": region_p_value < alpha,
     }
 
 @task
