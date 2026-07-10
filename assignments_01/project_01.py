@@ -7,8 +7,14 @@ from scipy.stats import ttest_ind, pearsonr
 from prefect import flow, task, get_run_logger
 
 
-DATA_DIR = Path("../assignments/resources/happiness_project")
-OUTPUT_DIR = Path("outputs")
+DATA_DIR = (
+        Path(__file__).resolve().parent.parent
+        / "assignments"
+        / "resources"
+        / "happiness_project"
+)
+
+OUTPUT_DIR = Path(__file__).resolve().parent / "outputs"
 
 
 @task(
@@ -239,14 +245,15 @@ def hypothesis_testing(df):
 
     if p_value < alpha:
         interpretation = (
-            "The difference between 2019 and 2020 happiness scores "
-            "is statistically significant."
+            "The average happiness score changed significantly between "
+            "2019 and 2020. This difference is unlikely to be due to random chance."
         )
     else:
         interpretation = (
-            "The difference between 2019 and 2020 happiness scores "
-            "is not statistically significant."
-        )
+            "The average happiness score did not change significantly between "
+            "2019 and 2020. The observed difference could reasonably be explained "
+            "by random variation."
+    )
 
     logger.info(f"Interpretation: {interpretation}")
 
@@ -440,15 +447,21 @@ def summary_report(df, hypothesis_result, strongest_correlation):
         logger.info(f"{region}: {score:.2f}")
 
     if hypothesis_result["significant"]:
-        logger.info(
-            "There is a statistically significant difference "
-            "between happiness scores in 2019 and 2020."
-        )
+        if hypothesis_result["mean_2020"] > hypothesis_result["mean_2019"]:
+            logger.info(
+                "Average happiness was higher in 2020 than in 2019, "
+                "and this difference is unlikely to be due to chance."
+            )
+        else:
+            logger.info(
+                "Average happiness was lower in 2020 than in 2019, "
+                "and this difference is unlikely to be due to chance."
+            )
     else:
         logger.info(
-            "There is no statistically significant difference "
-            "between happiness scores in 2019 and 2020."
-        )
+            "The analysis did not find enough evidence to conclude "
+            "that average happiness changed between 2019 and 2020."
+            )
 
     if strongest_correlation:
         logger.info(
@@ -456,7 +469,11 @@ def summary_report(df, hypothesis_result, strongest_correlation):
             f"is {strongest_correlation['variable']} "
             f"(correlation={strongest_correlation['correlation']:.4f})."
         )
-
+    else:
+        logger.info(
+            "No correlations remained statistically significant "
+            "after Bonferroni correction."
+        )
 
 @flow
 def happiness_pipeline():
