@@ -26,8 +26,14 @@ def load_data():
 
     all_years = []
 
-    # Create output folder if it doesn't exist
     OUTPUT_DIR.mkdir(exist_ok=True)
+
+    expected_columns = {
+        "Country",
+        "region",
+        "happiness_score",
+        "year"
+    }
 
     # Load data from 2015 to 2024
     for year in range(2015, 2025):
@@ -51,12 +57,19 @@ def load_data():
             "Regional indicator": "region"
         })
 
+        # Add year information
+        df["year"] = year
+
         logger.info(
             f"Loaded {year}: {len(df)} rows"
         )
 
-        # Add year information
-        df["year"] = year
+        missing_columns = expected_columns - set(df.columns)
+
+        if missing_columns:
+            raise ValueError(
+                f"{year} is missing columns: {missing_columns}"
+            )
 
         all_years.append(df)
 
@@ -76,7 +89,6 @@ def load_data():
         f"Missing values:\n{merged_df.isnull().sum()}"
     )
 
-    # Save merged dataset
     output_file = OUTPUT_DIR / "merged_happiness.csv"
 
     merged_df.to_csv(
