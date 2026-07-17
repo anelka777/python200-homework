@@ -9,7 +9,10 @@ import os
 
 os.makedirs("outputs", exist_ok=True)
 
-df = pd.read_csv("student_performance_math.csv", sep=";")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(script_dir, "student_performance_math.csv")
+
+df = pd.read_csv(csv_path, sep=";")
 
 print(df.shape)
 print(df.head())
@@ -230,7 +233,7 @@ plt.title("Predicted vs Actual (Full Model)")
 plt.xlabel("Predicted G3")
 plt.ylabel("Actual G3")
 plt.legend()
-plt.savefig("outputs/predicted_vs_actual_g3.png")
+plt.savefig("outputs/predicted_vs_actual.png")
 plt.close()
 
 # Comment: The errors are not uniform across the grade range -- the model
@@ -275,13 +278,15 @@ print("Test R^2 with G1 added:", test_r2_g1)
 # though it's less accurate, because it's the only one that works before
 # any grades exist.
 
-
+print("\nFiltered dataset size:", df_clean.shape[0])
+print("Training set size:", X_train_f.shape[0])
+print("Test set size:", X_test_f.shape[0])
 
 # --- Summary ---
 # Comment:
-# Dataset size: after removing G3=0 rows (students who didn't take the
-# final exam), the filtered dataset has 357 students, split into roughly
-# 285 training rows and 72 test rows (80/20 split).
+# Dataset size: after removing G3=0 rows, the filtered dataset has 357
+# students. Using an 80/20 split, this gives 285 training rows and 72 test
+# rows (exact counts printed above).
 #
 # Best model performance (full model without G1): RMSE ~2.66 and test R^2
 # ~0.263. In plain language, a typical prediction is off by about 2.7
