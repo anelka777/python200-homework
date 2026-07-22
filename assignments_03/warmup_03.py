@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -14,6 +15,8 @@ from sklearn.metrics import (
     confusion_matrix,
     ConfusionMatrixDisplay
 )
+
+os.makedirs("outputs", exist_ok=True)
 
 iris = load_iris(as_frame=True)
 X = iris.data
@@ -114,10 +117,10 @@ print(classification_report(y_test, y_pred_tree))
 # Q1
 print("\nLogistic Regression Q1: coefficient magnitude vs C")
 for C in [0.01, 1.0, 100]:
-    model = LogisticRegression(C=C, max_iter=1000, solver='liblinear')
-    model.fit(X_train_scaled, y_train)
-    coef_sum = np.abs(model.coef_).sum()
-    print(f"C={C}: total |coef| = {coef_sum:.4f}")
+    logreg = LogisticRegression(C=C, max_iter=1000, solver="liblinear")
+    logreg.fit(X_train_scaled, y_train)
+    coef_sum = np.abs(logreg.coef_).sum()
+    print(f"C={C}, total |coef| = {coef_sum:.4f}")
 # As C increases, the total coefficient magnitude increases. C is the inverse
 # of the regularization strength, so a smaller C penalizes large coefficients
 # more heavily (stronger regularization, simpler model), while a larger C
@@ -135,14 +138,17 @@ print("\nPCA Q1: shapes")
 print("X_digits:", X_digits.shape)
 print("images:", images.shape)
 
-fig, axes = plt.subplots(1, 10, figsize=(15, 2))
-fig.suptitle("One example of each digit class (0-9)")
+# 1 row x 10 columns: one example image per digit class (0 through 9), in
+# order, each labeled with its digit value directly above the image.
+fig, axes = plt.subplots(1, 10, figsize=(16, 2.5))
+fig.suptitle("One Example of Each Digit Class (0-9)", fontsize=14, y=1.05)
 for digit in range(10):
     idx = np.where(y_digits == digit)[0][0]
     axes[digit].imshow(images[idx], cmap="gray_r")
-    axes[digit].set_title(str(digit))
+    axes[digit].set_title(f"Digit {digit}", fontsize=10)
     axes[digit].axis("off")
-plt.savefig("outputs/sample_digits.png")
+plt.tight_layout()
+plt.savefig("outputs/sample_digits.png", bbox_inches="tight")
 plt.close()
 
 # Q2
@@ -188,28 +194,45 @@ n_digits_to_show = 5
 
 fig, axes = plt.subplots(len(n_values) + 1, n_digits_to_show, figsize=(10, 12))
 
+
+def clear_axis_keep_label(ax):
+    """Remove ticks/spines but keep the ylabel visible (axis('off') hides everything)."""
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
 for col in range(n_digits_to_show):
     axes[0, col].imshow(images[col], cmap="gray_r")
-    axes[0, col].axis("off")
-axes[0, 0].set_ylabel("Original", rotation=0, labelpad=40)
+    if col == 0:
+        clear_axis_keep_label(axes[0, col])
+    else:
+        axes[0, col].axis("off")
+axes[0, 0].set_ylabel("Original", rotation=0, labelpad=45, fontsize=11, fontweight="bold", va="center")
 
 for row, n in enumerate(n_values, start=1):
     for col in range(n_digits_to_show):
         recon = reconstruct_digit(col, scores, pca, n)
         axes[row, col].imshow(recon, cmap="gray_r")
-        axes[row, col].axis("off")
-    axes[row, 0].set_ylabel(f"n={n}", rotation=0, labelpad=40)
+        if col == 0:
+            clear_axis_keep_label(axes[row, col])
+        else:
+            axes[row, col].axis("off")
+    axes[row, 0].set_ylabel(f"n={n}", rotation=0, labelpad=45, fontsize=11, fontweight="bold", va="center")
 
 plt.tight_layout()
 plt.savefig("outputs/pca_reconstructions.png")
 plt.close()
-# Digits become clearly recognizable around n=15-40 components: at n=2 the
-# reconstructions are blurry blobs that are hard to tell apart, by n=15 the
-# digit shapes are mostly legible, and by n=40 they are close to the
-# originals. This does NOT match where the cumulative variance curve levels
-# off -- that curve already reaches 80% variance at around n=10-13
-# components (Q3), well before the reconstructions look visually clean.
-# In other words, capturing most of the statistical variance is not the same
-# as capturing enough detail for the human eye to recognize the digit;
-# visual recognizability needs more components than the variance curve
-# alone would suggest.
+# Q: At what n do the digits become clearly recognizable, and does that
+# match where the variance curve levels off?
+# A (recognizability): at n=2 the reconstructions are just blurry blobs; at
+# n=5 shapes are guessable but rough; by n=15 digits are clearly readable;
+# n=40 looks nearly identical to the original.
+# A (comparison to the variance curve): NOT closely. Only 13 components were
+# needed to reach 80% of the variance (Q3), but visual recognizability
+# doesn't arrive until roughly n=15 and keeps improving through n=40. So
+# recognizability lags behind the statistical variance threshold -- the
+# last ~20-30% of variance, which the curve treats as diminishing returns,
+# still carries enough fine detail (edges, curves) to matter a lot for how
+# a human eye reads the digit.
