@@ -152,12 +152,21 @@ acc = accuracy_score(y_test, pred)
 results["KNN (PCA)"] = (acc, pred)
 print(f"\nKNN (PCA-reduced, n={n}) accuracy: {acc:.4f}")
 print(classification_report(y_test, pred))
-# KNN on scaled data usually beats unscaled here, for the same reason
-# scaling mattered in Task 1: without it, capital_run_length_total swamps
-# the distance calculation. PCA-reduced KNN is typically close to (or
-# slightly behind) full-scaled KNN -- it keeps 90% of the variance but
-# still throws away some signal, which can cost a little accuracy while
-# making the model faster.
+knn_scaled_acc = results["KNN (scaled)"][0]
+knn_pca_acc = results["KNN (PCA)"][0]
+knn_unscaled_acc = results["KNN (unscaled)"][0]
+print(
+    f"\nKNN comparison -- unscaled: {knn_unscaled_acc:.4f}, "
+    f"scaled: {knn_scaled_acc:.4f}, PCA(n={n}): {knn_pca_acc:.4f}"
+)
+# Read the three numbers printed directly above to see which KNN variant
+# actually won on this run -- don't just assume. The expected pattern is:
+# scaled KNN should beat unscaled KNN, for the same reason scaling mattered
+# in Task 1 (without it, capital_run_length_total swamps the distance
+# calculation), and PCA-reduced KNN should land close to scaled KNN,
+# possibly a little behind, since keeping 90% of the variance still
+# discards some signal. Whatever the printed accuracies actually show is
+# the real conclusion to report here.
 
 # --- Decision Tree: depth comparison ---
 print("\nDecision Tree: train vs test accuracy by max_depth")
@@ -241,15 +250,24 @@ acc = accuracy_score(y_test, pred)
 results["Logistic Regression (PCA)"] = (acc, pred)
 print(f"\nLogistic Regression (PCA-reduced, n={n}) accuracy: {acc:.4f}")
 print(classification_report(y_test, pred))
-# Like KNN, Logistic Regression benefits from scaling for the same distance/
-# magnitude reasons. Interestingly, PCA-reduced Logistic Regression did NOT
-# outperform the plain scaled version here -- it actually scored slightly
-# lower, and the same pattern showed up for KNN (PCA-reduced KNN also
-# trailed scaled KNN slightly). This complicates the Task 2 hypothesis:
-# scaling alone captures most of the benefit for these magnitude-sensitive
-# models, and cutting to n components loses a bit of signal rather than
-# adding value -- PCA's real payoff here is compute/dimensionality
-# reduction (43 components instead of 57), not a boost in accuracy.
+logreg_scaled_acc = results["Logistic Regression (scaled)"][0]
+logreg_pca_acc = results["Logistic Regression (PCA)"][0]
+print(
+    f"\nLogistic Regression comparison -- scaled: {logreg_scaled_acc:.4f}, "
+    f"PCA(n={n}): {logreg_pca_acc:.4f}"
+)
+logreg_pca_helped = logreg_pca_acc > logreg_scaled_acc
+print(f"Did PCA help Logistic Regression on this run? {logreg_pca_helped}")
+# The two numbers printed above (and the boolean right after them) are the
+# actual evidence for this comparison -- report whichever one is true rather
+# than assuming. If PCA did NOT help (the common outcome for these
+# magnitude-sensitive models once they're already scaled), that confirms the
+# Task 2 hypothesis needs qualifying: scaling alone captures most of the
+# benefit, and cutting to n={n} components mostly buys compute/dimensionality
+# reduction rather than an accuracy boost. If PCA DID help on this run, the
+# non-tree pipeline in Task 5 should include it. Whichever branch the printed
+# `logreg_pca_helped` value falls into determines which model counts as the
+# best non-tree model below.
 
 print("\nSummary of test accuracies:")
 for name, (acc, _) in results.items():
@@ -368,10 +386,17 @@ print(classification_report(y_test, tree_pipeline_pred))
 # Best non-tree-based model: Logistic Regression. Only include PCA in the
 # pipeline if Task 3 showed it helped -- otherwise the extra step just adds
 # complexity without benefit.
-non_tree_pipeline = Pipeline([
-    ("scaler", StandardScaler()),
-    ("classifier", LogisticRegression(C=1.0, max_iter=1000, solver="liblinear"))
-])
+if logreg_pca_helped:
+    non_tree_pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("pca", PCA(n_components=n)),
+        ("classifier", LogisticRegression(C=1.0, max_iter=1000, solver="liblinear"))
+    ])
+else:
+    non_tree_pipeline = Pipeline([
+        ("scaler", StandardScaler()),
+        ("classifier", LogisticRegression(C=1.0, max_iter=1000, solver="liblinear"))
+    ])
 non_tree_pipeline.fit(X_train, y_train)
 non_tree_pipeline_pred = non_tree_pipeline.predict(X_test)
 print("\nNon-tree-based pipeline (Logistic Regression) -- test set classification report:")

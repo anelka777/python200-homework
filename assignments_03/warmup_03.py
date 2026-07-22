@@ -8,7 +8,6 @@ from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -115,11 +114,9 @@ print(classification_report(y_test, y_pred_tree))
 # Q1
 print("\nLogistic Regression Q1: coefficient magnitude vs C")
 for C in [0.01, 1.0, 100]:
-    logreg = OneVsRestClassifier(LogisticRegression(C=C, max_iter=1000, solver='liblinear'))
-    logreg.fit(X_train_scaled, y_train)
-    coef_sum = np.abs(logreg.estimators_[0].coef_).sum() + \
-               np.abs(logreg.estimators_[1].coef_).sum() + \
-               np.abs(logreg.estimators_[2].coef_).sum()
+    model = LogisticRegression(C=C, max_iter=1000, solver='liblinear')
+    model.fit(X_train_scaled, y_train)
+    coef_sum = np.abs(model.coef_).sum()
     print(f"C={C}: total |coef| = {coef_sum:.4f}")
 # As C increases, the total coefficient magnitude increases. C is the inverse
 # of the regularization strength, so a smaller C penalizes large coefficients
@@ -139,6 +136,7 @@ print("X_digits:", X_digits.shape)
 print("images:", images.shape)
 
 fig, axes = plt.subplots(1, 10, figsize=(15, 2))
+fig.suptitle("One example of each digit class (0-9)")
 for digit in range(10):
     idx = np.where(y_digits == digit)[0][0]
     axes[digit].imshow(images[idx], cmap="gray_r")
@@ -205,7 +203,13 @@ for row, n in enumerate(n_values, start=1):
 plt.tight_layout()
 plt.savefig("outputs/pca_reconstructions.png")
 plt.close()
-# Digits become clearly recognizable around n=15-40 components. This roughly
-# matches where the cumulative variance curve starts leveling off (well past
-# the 80% mark reached around 10-13 components) -- more components are needed
-# for visual clarity than for capturing the bulk of the statistical variance.
+# Digits become clearly recognizable around n=15-40 components: at n=2 the
+# reconstructions are blurry blobs that are hard to tell apart, by n=15 the
+# digit shapes are mostly legible, and by n=40 they are close to the
+# originals. This does NOT match where the cumulative variance curve levels
+# off -- that curve already reaches 80% variance at around n=10-13
+# components (Q3), well before the reconstructions look visually clean.
+# In other words, capturing most of the statistical variance is not the same
+# as capturing enough detail for the human eye to recognize the digit;
+# visual recognizability needs more components than the variance curve
+# alone would suggest.
