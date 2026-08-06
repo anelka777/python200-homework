@@ -1,0 +1,23 @@
+{
+  "python_version": "3.13.2 (tags/v3.13.2:4f8bb39, Feb  4 2025, 15:23:48) [MSC v.1942 64 bit (AMD64)]",
+  "sklearn_version": "1.5.2",
+  "feature_names": [
+    "temperature_2m_max",
+    "temperature_2m_min",
+    "precipitation_sum",
+    "wind_speed_10m_max"
+  ],
+  "best_hyperparameters": {
+    "clf__C": 100.0
+  },
+  "test_auc": 0.9490595611285266,
+  "city": "Sacramento, CA",
+  "latitude": 38.58,
+  "longitude": -121.49,
+  "label_thresholds": {
+    "temperature_2m_max": "7 to 26 C",
+    "temperature_2m_min": ">= 0 C",
+    "precipitation_sum": "< 3.0 mm",
+    "wind_speed_10m_max": "< 30 km/h"
+  }
+}
