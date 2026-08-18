@@ -18,12 +18,20 @@ else:
 
 Settings.embed_model = OpenAIEmbedding()
 
-# The assignment's example path is "assignments_06/resources/groundwork_docs";
-# this script instead expects groundwork_docs/ placed directly next to this
-# file (inside assignments_06/), since that's where it's checked in for this
-# submission. Adjust if your local layout differs.
-docs_dir = Path("groundwork_docs")
-assert docs_dir.exists(), f"Document directory not found: {docs_dir}"
+# The assignment instructions document the path as
+# "assignments_06/resources/groundwork_docs" (relative to the repo root).
+# This checks that documented path first, then falls back to groundwork_docs/
+# placed directly next to this script, so the assert works whether the code
+# is run from the repo root or from inside assignments_06/.
+candidate_dirs = [
+    Path("assignments_06/resources/groundwork_docs"),
+    Path("resources/groundwork_docs"),
+    Path("groundwork_docs"),
+]
+docs_dir = next((p for p in candidate_dirs if p.exists()), candidate_dirs[0])
+assert docs_dir.exists(), (
+    f"Document directory not found. Tried: {[str(p) for p in candidate_dirs]}"
+)
 
 
 # =========================================================

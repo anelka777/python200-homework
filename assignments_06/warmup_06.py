@@ -149,24 +149,22 @@ print("Selected document:", result2[0][0])
 
 # --- Keyword Q3 ---
 print("\n=== Keyword Q3 ===")
-# Prediction: loyalty.txt should be selected, because "sign up" and "rewards"
-# are close in meaning to "join" and "loyalty program" -- but keyword overlap
-# only counts exact words, so the real winner depends on which literal words
-# actually match. My best guess based on literal overlap is still loyalty.txt,
-# since "loyalty"/"program"/"points" are the closest vocabulary match.
+# PREDICTION (written before running the code below):
+# loyalty.txt should be selected, because "sign up" and "rewards" are close
+# in meaning to "join" and "loyalty program" -- but keyword overlap only
+# counts exact words, so the real winner depends on which literal words
+# actually match. My best guess based on literal overlap is still
+# loyalty.txt, since "loyalty"/"program"/"points" are the closest vocabulary
+# match.
 query3 = "How do I sign up for rewards?"
 result3 = simple_keyword_retrieval(query3, documents, verbose=True)
 print("Selected document:", result3[0][0])
-# Compare the printed overlap scores above to the prediction and add a note
-# here about whether it matched (e.g. if the score was 0 overlap and it fell
-# back to "None found", that shows exactly the same weakness as Q2: no
-# exact-word match even though the meaning is clearly about the loyalty program).
-#
-# Result: my prediction was WRONG. All four documents scored 0 overlap
-# (no exact word from "sign up for rewards" appears in loyalty.txt -- the
-# actual text uses "loyalty program", "points", and "redeem", not "sign up"
-# or "rewards"), so the function returned "None found" instead of
-# loyalty.txt. This is the same weakness as Q2: keyword overlap can miss an
+# ACTUAL RESULT (written after running the code above):
+# My prediction was WRONG. All four documents scored 0 overlap -- no exact
+# word from "sign up for rewards" appears in loyalty.txt (its actual text
+# uses "loyalty program", "points", and "redeem", not "sign up" or
+# "rewards"), so the function returned "None found" instead of loyalty.txt.
+# This is the same weakness as Q2: keyword overlap can miss an
 # obviously-relevant document simply because the query and the document use
 # different words for the same concept.
 
