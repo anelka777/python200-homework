@@ -120,11 +120,14 @@ query1 = "What are your hours on weekends?"
 result1 = simple_keyword_retrieval(query1, documents, verbose=True)
 print("Selected document:", result1[0][0])
 # hours.txt was NOT selected, even though semantically it's the right answer.
-# Reason: "your" is not in the stopwords list, and it happens to appear in
-# 3 documents (hours.txt, hiring.txt, loyalty.txt) -> tie at score=1.
-# On a tie, the function sorts (score, name, content) tuples in reverse,
-# so "loyalty.txt" comes out "greater" alphabetically than "hours.txt"
-# and wins the tie-break.
+# Note: hours.txt does not literally contain the word "hours" anywhere in its
+# text ("We are open Monday through Friday...") -- so it gets no credit for
+# that token. Its only overlap comes from "weekends" -> score 1.
+# Reason for the actual winner: "your" is not in the stopwords list, and it
+# happens to appear in 3 documents (hours.txt, hiring.txt, loyalty.txt) -> a
+# 3-way tie at score=1. On a tie, the function sorts (score, name, content)
+# tuples in reverse, so "loyalty.txt" comes out "greater" alphabetically than
+# "hours.txt" and wins the tie-break.
 # This shows a real weakness of keyword RAG: the result can depend on
 # accidental overlap of unfiltered common words and on tie-break order,
 # rather than on which document is actually most relevant.
@@ -134,14 +137,15 @@ print("\n=== Keyword Q2 ===")
 query2 = "Do you have anything without caffeine?"
 result2 = simple_keyword_retrieval(query2, documents, verbose=True)
 print("Selected document:", result2[0][0])
-# Keyword RAG selected menu.txt (or "None found", depending on overlap) because
-# the word "caffeine" never appears anywhere -- but "anything" and other query
-# words barely overlap with menu.txt either. Keyword RAG got this WRONG (or got
-# lucky by accident): it has no concept that "without caffeine" is *semantically*
-# related to "decaf". It can only match literal words, not meaning.
-# Semantic (embedding-based) retrieval would do better here, because "without
-# caffeine" and "decaf"/"herbal tea" are close in meaning even though they
-# share no exact words.
+# Keyword RAG returned "None found" -- the word "caffeine" never appears
+# anywhere in the documents, and "anything"/"without"/"have"/"do" don't
+# overlap with any document either, so every document scores 0. Keyword RAG
+# got this WRONG: it has no concept that "without caffeine" is
+# *semantically* related to "decaf". It can only match literal words, not
+# meaning, so a real match (if one existed) would be missed entirely.
+# Semantic (embedding-based) retrieval would do better here, because
+# "without caffeine" and "decaf"/"herbal tea" are close in meaning even
+# though they share no exact words.
 
 # --- Keyword Q3 ---
 print("\n=== Keyword Q3 ===")
@@ -157,6 +161,14 @@ print("Selected document:", result3[0][0])
 # here about whether it matched (e.g. if the score was 0 overlap and it fell
 # back to "None found", that shows exactly the same weakness as Q2: no
 # exact-word match even though the meaning is clearly about the loyalty program).
+#
+# Result: my prediction was WRONG. All four documents scored 0 overlap
+# (no exact word from "sign up for rewards" appears in loyalty.txt -- the
+# actual text uses "loyalty program", "points", and "redeem", not "sign up"
+# or "rewards"), so the function returned "None found" instead of
+# loyalty.txt. This is the same weakness as Q2: keyword overlap can miss an
+# obviously-relevant document simply because the query and the document use
+# different words for the same concept.
 
 
 # =========================================================

@@ -18,7 +18,10 @@ else:
 
 Settings.embed_model = OpenAIEmbedding()
 
-# groundwork_docs/ should sit directly inside assignments_06/, next to this script.
+# The assignment's example path is "assignments_06/resources/groundwork_docs";
+# this script instead expects groundwork_docs/ placed directly next to this
+# file (inside assignments_06/), since that's where it's checked in for this
+# submission. Adjust if your local layout differs.
 docs_dir = Path("groundwork_docs")
 assert docs_dir.exists(), f"Document directory not found: {docs_dir}"
 
